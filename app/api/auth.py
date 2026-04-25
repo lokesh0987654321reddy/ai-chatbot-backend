@@ -50,13 +50,22 @@ def login(user: UserLogin, response: Response, db: Session = Depends(get_db)):
     key="access_token",
     value=access_token,
     httponly=True,
-    secure=False,        # True only in HTTPS
-    samesite="lax",
-    max_age=60 * 60,
+    secure=True,        # True only in HTTPS
+    samesite="none",
+    max_age=60 * 60 * 24,  # 1 day
     path="/",            # 🔥 IMPORTANT
     )  
     return {"message": "Login successful"}
 
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(
+        key="access_token",
+        path="/",        # ⚠️ must match login cookie path
+        samesite="none",
+        secure=True      # same as login
+    )
+    return {"message": "Logout successful"}
 
 @router.get("/me")
 def get_current_user_info(current_user: str = Depends(get_current_user)):

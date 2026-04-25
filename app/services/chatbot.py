@@ -2,14 +2,15 @@
 import requests
 import json
 from app.models.message import ChatMessage
-from app.core.personalities import PERSONALITIES
 from app.core.models_registry import MODELS
+from requests.exceptions import Timeout, RequestException
+from app.services.retriever import retrieve_resume_context
 import os
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/chat")
+OPENROUTER_URL = os.getenv("OPENROUTER_URL", "https://openrouter.ai/api/v1/chat/completions")
 
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 HEADERS = {
     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -47,6 +48,7 @@ def stream_openrouter_response(messages: list, model_config: dict = None):
                     err = response.json()
                     message = err.get("error", {}).get("message", "Unknown error")
                 except Exception:
+                    print("Error parsing error response:", err)
                     message = response.text
 
                 yield f"[ERROR] {message}"
@@ -73,13 +75,16 @@ def stream_openrouter_response(messages: list, model_config: dict = None):
                     continue
 
     except Timeout:
-        yield "[ERROR] AI service timed out. Please try again."
+        yield "event: error\ndata: OpenRouter request timed out. Please try again.\n\n"
+        return
 
     except RequestException:
-        yield "[ERROR] Unable to connect to AI service."
+        yield f"event: error\ndata: Network error: {str(e)}\n\n"
+        return
 
     except Exception:
-        yield "[ERROR] Unexpected server error occurred."
+        yield f"event: error\ndata: Unexpected error: {str(e)}\n\n"
+        return
 
 def stream_bot_response(messages: list):
     print("Sending messages to Ollama:", messages)
@@ -112,31 +117,6 @@ def get_chat_history(chat_id: int, db, limit: int = 10):
         .all()[::-1]
     )
 
-def build_ollama_messages(history, new_message: str, personality: str = "default"):
-    messages = []
-
-    # ✅ Add system personality FIRST
-    system_prompt = PERSONALITIES.get(personality, PERSONALITIES["default"])
-
-    messages.append({
-        "role": "system",
-        "content": system_prompt
-    })
-
-    for msg in history:
-        role = "user" if msg.sender == "user" else "assistant"
-        messages.append({
-            "role": role,
-            "content": msg.content
-        })
-
-    # Add current user message
-    messages.append({
-        "role": "user",
-        "content": new_message
-    })
-
-    return messages
 
 def get_model_config(model_id: str):
     for model in MODELS:

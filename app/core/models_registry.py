@@ -14,8 +14,8 @@ MODELS = [
         "free": True,
     },
     {
-        "id": "mistralai/devstral-2512:free",
-        "label": "⚡ Mistral: Devstral 2 2512",
+        "id": "nvidia/nemotron-3-nano-30b-a3b:free",
+        "label": "⚡ NVIDIA: Nemotron 3 Nano 30B A3B",
         "provider": Provider.OPENROUTER,
         "description": "Good reasoning, free OpenRouter model",
         "free": True,
