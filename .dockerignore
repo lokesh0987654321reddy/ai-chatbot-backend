@@ -1,0 +1,16 @@
+venv/
+.venv/
+__pycache__/
+.env
+.git
+.gitignore
+node_modules/
+
+# Ignore large data and storage
+chroma/
+data/
+storage/
+
+# Ignore deployment packages
+deployment.zip
+*.zip

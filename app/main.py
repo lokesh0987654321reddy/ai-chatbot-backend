@@ -51,3 +51,6 @@ app.include_router(auth_router)
 app.include_router(models.router)
 app.include_router(upload_router)
 
+# Entry point for AWS Lambda
+from mangum import Mangum
+handler = Mangum(app)
